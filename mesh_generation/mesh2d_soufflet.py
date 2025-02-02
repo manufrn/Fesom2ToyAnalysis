@@ -148,7 +148,7 @@ dd = -H * np.ones_like(xcoord)
 
 
 # Output 2D mesh
-with open('nod2d_py.out', 'w') as fid:
+with open('nod2d.out', 'w') as fid:
     fid.write(f'{n2d:8d}\n')
     for i in range(nodes.shape[1]):
         fid.write(f'{int(nodes[0, i]):8d} {nodes[1, i]:8.4f} {nodes[2, i]:8.4f} {int(nodes[3, i]):8d}\n')
@@ -157,7 +157,7 @@ with open('nod2d_py.out', 'w') as fid:
 # In[9]:
 
 
-with open('elem2d_py.out', 'w') as fid:
+with open('elem2d.out', 'w') as fid:
     fid.write(f'{len(tri[:, 0]):8d}\n')
     for i in range(len(tri)):
         fid.write(f'{tri[i, 0]:8d} {tri[i, 1]:8d} {tri[i, 2]:8d}\n')
@@ -166,7 +166,7 @@ with open('elem2d_py.out', 'w') as fid:
 # In[10]:
 
 
-with open('depth_py.out', 'w') as fid:
+with open('depth.out', 'w') as fid:
     fid.write(f'{nl:g}\n')
     for i in range(len(zbar)):
         fid.write(f'{zbar[i]:g}\n')
