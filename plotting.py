@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import xarray as xr
-
 
 def plot_2d_field_triangular(field, x, y, cmap=None, cbar_label=None, robust=False, soufflet=False, **kwargs):
     '''
@@ -74,6 +74,82 @@ def plot_2d_field_triangular(field, x, y, cmap=None, cbar_label=None, robust=Fal
     return fig, ax
 
 
+def plot_2d_field_triangular_tri(field, tri, cmap=None, cbar_label=None, robust=False, soufflet=False, shading=None, **kwargs):
+    '''
+    Plots a 2d field defined over mesh elements or nodes and returns the Figure and Axes
+    objects for further customization. Recommended to add plt.show() after calling this
+    function. Only tested in Soufflet and double gyre meshes. 
+
+    Parametres
+    ----------
+    field : xr.DataArray or array_like
+        Defines a 2d field over mesh elements or nodes. So it actually is a 1d array.
+    tri : matplotlib.Triangulation 
+        Triangulation for the unstructured grid obtained by the get_triangulation function
+        located in data_loader.py. 
+    cmap: str, optional
+        Colormap to be used.
+    cbar_label: str, optional
+        Label of the colorbar.
+    soufflet : bool
+        Set to True if the data is form a Soufflet toy model run. This ensures that the
+        periodicity of the mesh doesn't distort the plots. This asumes that the coordinate 
+        arrays for the elements were loaded using the function get_mesh_coordinates from
+        plotting.py. See the comments therein for a detailed explanation. 
+
+    Returns
+    -------
+    fig : Figure
+    ax : Axes
+
+    '''
+
+    if soufflet:
+        # remove westernmost triangles if field is defined over elements (see data_loader.py)
+        if isinstance(field, xr.DataArray) and 'elem' in field.dims:
+            field = field[:len(tri.triangles)]
+
+        # hopefully the same as above if field is not dataarray, but less obvious what is going on
+        #elif field.size > x.size:
+            #field = field[:len(y)]
+    
+    if robust:
+        vmin = np.quantile(field, 0.01)
+        vmax = np.quantile(field, 0.99)
+        if np.sign(vmin) != np.sign(vmax):
+            if -vmin > vmax:
+                vmax = -vmin
+            else:
+                vmin = -vmax
+        extend = 'both'
+        
+    else:
+        extend = 'neither'
+
+    if shading is None:
+        if 'nod2' in field.dims:
+            shading='gouraud'
+        else:
+            shading = 'flat'
+    
+    fig, ax = plt.subplots()
+    if robust:
+        im = ax.tripcolor(tri, field, shading=shading, cmap=cmap, vmin=vmin, vmax=vmax, **kwargs)
+    else:
+        im = ax.tripcolor(tri, field, shading=shading, cmap=cmap, **kwargs)
+    cbar = fig.colorbar(im, shrink=0.9, label=cbar_label, extend=extend)
+    ax.set_xlabel('Longitude [\N{degree sign}]')
+    ax.set_ylabel('Latitude [\N{degree sign}]')
+
+    ax.margins(0)
+    if soufflet and 'nod2' in field.dims:
+        ax.set_xlim(None, np.unique(tri.x)[-2])
+    ax.set_aspect('equal')
+    
+    return fig, ax
+
+
+
 def plot_2d_field_interpolated(field, xx, yy, cmap=None, cbar_label=None):
     fig, ax = plt.subplots()
     im = ax.pcolormesh(xx, yy, field)
@@ -94,15 +170,16 @@ def plot_2d_field_interpolated(field, xx, yy, cmap=None, cbar_label=None):
 
 def plot_vertical_profile(profile, depth=None):
     fig, ax = plt.subplots(figsize=(4.8, 6.4))
-    if isinstance(profile, xr.DataArray) and 'nz1' or 'nz' in profile.dims:
+
+    if depth is not None:
+        ax.plot(profile, depth)
+        
+    elif isinstance(profile, xr.DataArray) and ('nz1' or 'nz' in profile.dims):
         if 'nz' in profile.dims:
             y = 'nz'
         elif 'nz1' in profile.dims:
             y = 'nz1'
         profile.plot.line(ax=ax, y=y, _labels=False)
-
-    elif depth is not None:
-        ax.plot(profile, depth)
 
     else: 
         raise ValueError('If profile is not a DataArray defining a vertical\
@@ -143,9 +220,9 @@ def plot_mutiple_vertical_diagnostics(list_ds, labels, coefs=[1e2, 1e5, 1e9], le
     axs[2].set_title(r"$\overline{w' b'}$")
 
     exps = ["{:e}".format(coef).split('+')[1].lstrip('0') for coef in coefs]
-    axs[0].set_xlabel(rf'$10^{{{exps[0]}}}$ m$^{{2}}$ s$^{{-2}}$')
-    axs[1].set_xlabel(rf'$10^{{{exps[1]}}}$ m s$^{{-1}}$')
-    axs[2].set_xlabel(rf'$10^{{{exps[2]}}}$ m$^{{2}}$ s$^{{-3}}$')
+    axs[0].set_xlabel(rf'$10^{{-{exps[0]}}}$ m$^{{2}}$ s$^{{-2}}$')
+    axs[1].set_xlabel(rf'$10^{{-{exps[1]}}}$ m s$^{{-1}}$')
+    axs[2].set_xlabel(rf'$10^{{-{exps[2]}}}$ m$^{{2}}$ s$^{{-3}}$')
 
 
     axs[0].legend(title=legend_title, 

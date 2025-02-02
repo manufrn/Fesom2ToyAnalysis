@@ -25,7 +25,6 @@ def RMS_vertical_velocity(w, nod_area):
         of ['nz1'].
 
     '''
-
     w_squared_weighted = (w**2).weighted(nod_area).mean('nod2')
     w_rms = np.sqrt(w_squared_weighted.mean('time'))
 
@@ -52,7 +51,7 @@ def mean_EKE(u, v, elem_area):
     -------
     DataArray
     '''
-
+    
     u_mean = u.mean('time')
     v_mean = v.mean('time')
     eke = ((u - u_mean) ** 2 + (v - v_mean) ** 2 ) / 2

@@ -1,6 +1,25 @@
 import numpy as np
 import xarray as xr
+from matplotlib.tri import Triangulation
 from pathlib import Path
+
+
+def get_triangulation(mesh_path, soufflet=False):  
+    nodes = np.loadtxt(mesh_path + 'nod2d.out', skiprows=1, usecols=[1, 2]).T #2d array of node coords
+    lon_nodes, lat_nodes = nodes 
+    
+    elems = np.loadtxt(mesh_path + 'elem2d.out', skiprows=1) - 1
+
+
+    if soufflet:
+        # works for me, may have to be addapted depending on mesh generation strategy? 
+        ny = len(lat_nodes[:np.where(lat_nodes == lat_nodes.max())[0][0]+1])
+        nx = len(lon_nodes[::ny]) + 1 # in case we need it later
+        last_elems_idx = len(elems) - (ny * 2 - 2)
+        elems = elems[:last_elems_idx]
+
+    tri = Triangulation(lon_nodes, lat_nodes, elems)
+    return tri
 
 
 def get_mesh_coordinates(mesh_path, soufflet=False):
@@ -65,7 +84,7 @@ def get_mesh_coordinates(mesh_path, soufflet=False):
     return lon_nodes, lat_nodes, lon_elems, lat_elems
 
 
-def load_variable(data_path, variable, year_1=None, year_f=None):
+def load_variable(data_path, variable, year_1=None, year_f=None, zerostonan=True):
     '''
     Loads a given variable from a results folder. Output is a xr.DataArray containing
     the years of simulation starting from year_1 up to year_f. If year_1 and year_f are
@@ -81,6 +100,8 @@ def load_variable(data_path, variable, year_1=None, year_f=None):
         Initial year to load into the DataArray. Prior years won't be loaded.
     year_f : int, optional
         Initial year to load into the DataArray. Later years won't be loaded.
+    zerostonan : bool, optional
+        If True, zero value in the DataArray are set to np.nan. Useful to mask topography.
 
     Returns
     -------
@@ -109,6 +130,9 @@ def load_variable(data_path, variable, year_1=None, year_f=None):
             dataarray = ds[list(ds.data_vars)[0]]
         else:
             raise KeyError("The selected files have more than one data variable and I don't know how to handle this.")
+
+    if zerostonan:
+        dataarray = dataarray.where(dataarray!=0)
 
     return dataarray
 
@@ -142,6 +166,7 @@ def get_mesh_diagnostics(data_path, variables=None):
             output = mesh_diag[variables]
 
         elif isinstance(variables, (list, tuple)):
+            output = []
             for var in variables:
                 output.append(mesh_diag[var])
 

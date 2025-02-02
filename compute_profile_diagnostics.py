@@ -1,12 +1,12 @@
 import sys
 from pathlib import Path
 import xarray as xr
-from high_level_functions import compute_vertical_diagnostics
+from high_level_functions import vertical_diagnostics_all
 
 # modify values in this block
-data_path = '/gxfs_work/geomar/smomw649/results/souff_lvl4/souff_20_0005_03_dyn/'
-output_path = '../processed_data/souff_lvl4/souff_20_0005_03_dyn/profile_diags.nc'
-year_1 = 1902
+data_path = '/gxfs_work/geomar/smomw649/results/souff_10_001_06_20_0/'
+output_path = '/gxfs_work/geomar/smomw649/processed_data/souff_10_001_06_20_0/profile_diags.nc'
+year_1 = 1901
 year_f = None
 
 output_path = Path(output_path)
